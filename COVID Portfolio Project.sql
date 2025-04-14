@@ -1,76 +1,75 @@
 -- SELECT *
--- FROM PortfolioProject..Covid_vaccinations
--- order by 3,4
+FROM PortfolioProject..Covid_vaccinations
+order by 3,4
 
 -- SELECT *
--- FROM PortfolioProject..Covid_vaccinations
--- order by 3,4
+FROM PortfolioProject..Covid_vaccinations
+order by 3,4
 
 -- Select Data that we are going to be using
 
--- SELECT country, date, total_cases, new_cases, total_deaths, population
--- FROM PortfolioProject..Covid_deaths
--- order by 1,2
+SELECT location, date, total_cases, new_cases, total_deaths, population
+FROM PortfolioProject..Covid_deaths
+order by 1,2
 
 
 -- Find Total Cases vs Total Deaths
 -- Shows the death rate over time
 
--- SELECT 
---     country, 
---     date, 
---     total_cases, 
---     total_deaths, 
---     (CAST(total_deaths AS FLOAT) / NULLIF(total_cases, 0)) * 100 AS DeathPercentage
--- FROM 
---     PortfolioProject..Covid_deaths
--- ORDER BY 
---     1, 2;
+SELECT 
+    location, 
+    date, 
+    total_cases, 
+    total_deaths, 
+    (CAST(total_deaths AS FLOAT) / NULLIF(total_cases, 0)) * 100 AS DeathPercentage
+FROM 
+    PortfolioProject..Covid_deaths
+ORDER BY 
+    1, 2;
 
 -- This is the Death rate compared across continents
 
--- SELECT 
---     continent, 
---     MAX(population) AS population,
---     MAX(total_cases) AS TotalCases,
---     MAX(total_deaths) AS TotalDeathCount, 
---     MAX(CAST(total_deaths AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationDied
--- FROM 
---     PortfolioProject..Covid_deaths
--- WHERE 
---     continent IS NOT NULL
--- GROUP BY 
---     continent
--- ORDER BY 
---     TotalDeathCount DESC;
+SELECT 
+    continent, 
+    MAX(population) AS population,
+    MAX(total_cases) AS TotalCases,
+    MAX(total_deaths) AS TotalDeathCount, 
+    MAX(CAST(total_deaths AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationDied
+FROM 
+    PortfolioProject..Covid_deaths
+WHERE 
+    continent IS NOT NULL
+GROUP BY 
+    continent
+ORDER BY 
+    TotalDeathCount DESC;
 
 
 -- Now lets examine total cases vs population in Brazil
--- This show the contraction rate over time
--- SELECT 
---     country, 
---     date, 
---     population,
---     total_cases, 
---     (CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS ContractionRate
--- FROM 
---     PortfolioProject..Covid_deaths
--- WHERE country = 'Brazil'
--- ORDER BY 
---     1, 2;
+This show the contraction rate over time
+SELECT 
+    location, 
+    date, 
+    population,
+    total_cases, 
+    (CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS ContractionRate
+FROM 
+    PortfolioProject..Covid_deaths
+WHERE location = 'Brazil'
+ORDER BY 
+    1, 2;
 
 
 -- Next, let's examine the countries with the highest infection rate relative to population
--- SELECT 
---     country, 
---     population,
---     MAX(total_cases) AS HighestInfectionCount, 
---     MAX(CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationInfected
--- FROM 
---     PortfolioProject..Covid_deaths
--- -- WHERE country = 'Brazil'
--- GROUP BY country, population
--- ORDER BY PercentPopulationInfected DESC;
+SELECT 
+    location, 
+    population,
+    MAX(total_cases) AS HighestInfectionCount, 
+    MAX(CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationInfected
+FROM 
+    PortfolioProject..Covid_deaths
+GROUP BY location, population
+ORDER BY PercentPopulationInfected DESC;
 
 
 -- This is a continent-specific analysis for highest death count
