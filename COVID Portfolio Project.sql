@@ -141,42 +141,51 @@ WHERE continent is not NULL
 order by 1,2;
 
 
--- Total world population vs vaccinations
+-- This query joins COVID deaths and vaccination data
+-- then calculates a cumulative (rolling) vaccination total per country over time
 
-SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
-,SUM(vac.new_vaccinations) OVER (Partition by dea.location ORDER by dea.location, dea.date) as RollingVaccTotal
-, (RollingVaccTotal)
-FROM PortfolioProject..CovidDeaths dea
-JOIN PortfolioProject..CovidVaccinations vac
-    ON dea.location = vac.location
-    and dea.date = vac.date
-WHERE dea.continent is not null
-ORDER BY 1,2,3
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+
+    -- Rolling total vaccinations per country over time
+    SUM(vac.new_vaccinations) OVER (Partition by dea.location ORDER by dea.location, dea.date) as RollingVaccTotal
+FROM PortfolioProject..CovidDeaths dea            -- 'dea' = deaths table (includes population and cases)
+JOIN PortfolioProject..CovidVaccinations vac      -- 'vac' = vaccinations table (vacc data)
+    ON dea.location = vac.location                -- joining on matching country
+    and dea.date = vac.date                       -- and on matching date
+WHERE dea.continent is not null                   -- filters out global/unassigned entries
+ORDER BY 1,2,3                                    -- sorts by continent, then country, then date
 
 
--- USE CTE
+-- This query uses a CTE to calculate cumulative vaccinations per country over time
+-- final SELECT calculates the vaccination rate up to that date
 
-WITH PopvsVacc (continent, location, date, population, new_vaccinations, RollingVaccTotal)
-as
+WITH PopvsVacc (continent, location, date, population, new_vaccinations, RollingVaccTotal) as
 (
-SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
-,SUM(CONVERT(float,vac.new_vaccinations)) OVER (Partition by dea.location ORDER by dea.location, dea.date) as RollingVaccTotal
---, (RollingVaccTotal)
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+
+    -- Calculates the cumulative total of new vaccinations over time for each country
+    SUM(CONVERT(float,vac.new_vaccinations)) OVER (Partition by dea.location ORDER by dea.location, dea.date) as RollingVaccTotal
+
 FROM PortfolioProject..CovidDeaths dea
 JOIN PortfolioProject..CovidVaccinations vac
     ON dea.location = vac.location
     and dea.date = vac.date
-WHERE dea.continent is not null
+WHERE dea.continent is not null                    -- exludes rows with NULL continent values (e.g., global totals, ships)
 -- ORDER BY 2,3
 )
-SELECT * , (RollingVaccTotal/population)*100
+SELECT * , (RollingVaccTotal/population)*100       -- provides the updated cumulative count of % population vaccinated
 FROM PopvsVacc
 
 
---Temp Table
-
-DROP Table if exists #PercentPopulationVaccinated
-Create Table #PercentPopulationVaccinated
+    
+-- This query creates a temporary table that tracks, for each location and date, 
+-- the cumulative number of COVID-19 vaccinations administered (rolling total)
+-- and then calculates the vaccination rate (% of population vaccinated) up to that date
+    
+DROP Table if exists #PercentPopulationVaccinated          -- This ensures that if the temporary table #PercentPopulationVaccinated exists from a previous run,
+                                                                it gets deleted first, avoiding errors when creating it again.
+    
+    Create Table #PercentPopulationVaccinated              -- Create a temporary table to store vaccination info
 (
 Continent nvarchar(255),
 location NVARCHAR(255),
@@ -186,19 +195,21 @@ new_vaccinations numeric,
 RollingVaccTotal numeric,
 )
 
-Insert into #PercentPopulationVaccinated
+Insert into #PercentPopulationVaccinated                    -- insert data into temp table
 SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 ,SUM(CONVERT(float,vac.new_vaccinations)) OVER (Partition by dea.location ORDER by dea.location, dea.date) as RollingVaccTotal
 --, (RollingVaccTotal)
-FROM PortfolioProject..CovidDeaths dea
-JOIN PortfolioProject..CovidVaccinations vac
-    ON dea.location = vac.location
-    and dea.date = vac.date
-WHERE dea.continent is not null
+FROM PortfolioProject..CovidDeaths dea                       -- selecting data from two tables (dea, vac) that contain death and population info
+JOIN PortfolioProject..CovidVaccinations vac                 -- and vaccination data by location and date
+    ON dea.location = vac.location                           -- two tables are joined on matching location and date so that data points are pulled 
+    and dea.date = vac.date                                  -- from the same location and date in both datasets
+WHERE dea.continent is not null                              -- filtering is applied to exlude rows with missing continent info
 -- ORDER BY 2,3
-
-SELECT *, (RollingVaccTotal/population)*100
-FROM #PercentPopulationVaccinated
+                                                             -- Key column is RollingVaccTotal, which is calculated with the SUM
+    
+SELECT *, (RollingVaccTotal/population)*100                  -- select from the temp table and calculate the vaccination percentage
+FROM #PercentPopulationVaccinated                            -- Query adds new computed column which is the percentage of the population vaccinated up to that date
+                                                             -- PercentVaccinated = RollingVaccTotal / population   * 100
 
 
 -- Create a View to store data for later visualizations
