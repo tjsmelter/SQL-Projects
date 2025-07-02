@@ -215,7 +215,7 @@ WHERE dea.continent is not null
 -- ORDER BY 2,3
 
 
--- Now we have a new working table within this view that we can use
+-- New working table that can be used
 
 SELECT *
 FROM PercentPopulationVaccinated
