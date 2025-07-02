@@ -54,63 +54,84 @@ ORDER BY
     TotalDeathCount DESC;                          -- orders results from highest to lowest total death count
 
 
--- Now lets examine total cases vs population in Brazil
--- This shows the contraction rate over time
+
+-- This caluclates the COVID-19 contraction rate in Brazil over time
+-- The contraction rate is: (total_cases / population) * 100
 
 SELECT 
-    country, 
-    date, 
-    population,
-    total_cases, 
+    country,                                       -- Country name (Brazil in this case)
+    date,                                          -- date of the recorded data
+    population,                                    -- population size
+    total_cases,                                   -- cumulative COVID-19 cases as of that date
+
+    -- calculate contraction rate
     (CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS ContractionRate
 FROM 
     PortfolioProject..Covid_deaths
-WHERE country = 'Brazil'
+WHERE country = 'Brazil'                           -- filter for Brazil only
 ORDER BY 
-    1, 2;
+    1, 2;                                          -- sorts results by country and by chronological date
 
 
--- Next, let's examine the countries with the highest infection rate relative to population
+
+-- Query calculates the maximum number of COVID-19 cases (infection count)
+-- and the corresponding % of population infected for each coutnry
 
 SELECT 
     country, 
     population,
-    MAX(total_cases) AS HighestInfectionCount, 
+    MAX(total_cases) AS HighestInfectionCount,     -- highest total cases recorded
     MAX(CAST(total_cases AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationInfected
 FROM 
     PortfolioProject..Covid_deaths
+
+-- remove below comment to filter for specific country
 -- WHERE country = 'Brazil'
-GROUP BY country, population
-ORDER BY PercentPopulationInfected DESC;
+GROUP BY country, population                       -- group by country and population
+ORDER BY PercentPopulationInfected DESC;           -- sorts countries from highest to lowest percent infected
 
 
--- This is a continent-specific analysis for highest death count
+
+-- This calculates the total death count and death rate from COVID-19 from each continent, using the max values available in the dataset
 
 SELECT 
     continent, 
-    MAX(total_deaths) AS TotalDeathCount, 
+    MAX(total_deaths) AS TotalDeathCount,          -- highest cumulative death count
+
+    -- death rate = (total_deaths / population) * 100
     MAX(CAST(total_deaths AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationDied
 FROM 
     PortfolioProject..CovidDeaths
-WHERE continent IS NOT NULL
-GROUP BY continent
-ORDER BY TotalDeathCount DESC;
+WHERE continent IS NOT NULL                        -- filters out rows where continent is missing
+GROUP BY continent                                 -- group by continent 
+ORDER BY TotalDeathCount DESC;                     -- orders by highest death toll
 
 
--- Next, let's look at countries with the highest death count per
+
+-- This calculates the COVID-19 death count and death rate
+-- for each location (where continent data is available)
 SELECT 
     location, 
     population,
-    MAX(total_deaths) AS TotalDeathCount, 
+    MAX(total_deaths) AS TotalDeathCount,          -- Gets highest total_deaths value recorded for each location
+                                                   -- death rate (total_deaths / population) * 100
     MAX(CAST(total_deaths AS FLOAT) / NULLIF(population, 0)) * 100 AS PercentPopulationDied
 FROM 
     PortfolioProject..CovidDeaths
+
+-- optional filter: uncomment to pull specific country    
 -- WHERE country = 'Brazil'
+
+-- optional filter to only include rows where continent is known
 WHERE continent IS NOT NULL
-GROUP BY location, population
+GROUP BY location, population                      
 ORDER BY TotalDeathCount DESC;
 
--- Global Numbers 
+
+
+-- This caclculates total new COVID-19 cases and deaths
+-- and computes the overall death rate (new deaths / new cases * 100)
+-- accross all records where a continent is specified 
 
 SELECT SUM(new_cases), SUM(new_deaths), CAST(SUM(new_deaths) AS FLOAT)/SUM(new_cases)*100 as DeathPercentage
 FROM PortfolioProject..CovidDeaths
@@ -118,6 +139,7 @@ FROM PortfolioProject..CovidDeaths
 WHERE continent is not NULL
 -- GROUP BY date
 order by 1,2;
+
 
 -- Total world population vs vaccinations
 
